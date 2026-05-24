@@ -1,4 +1,4 @@
-from ASTNode import ASTNode
+from components.ASTNode import ASTNode
 
 #Nodo para operaciones binarias
 #Ejemplo: (5 + 3, x * 2 etc.)

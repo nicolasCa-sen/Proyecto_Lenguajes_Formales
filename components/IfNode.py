@@ -1,4 +1,4 @@
-from ASTNode import ASTNode
+from components.ASTNode import ASTNode
 
 #Nodo para las sentencias if, que pueden tener una condición, un bloque de código para el caso verdadero y opcionalmente un bloque de código para el caso falso
 #Ejemplo: if x > 5: print("Mayor que 5")

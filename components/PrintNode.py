@@ -1,4 +1,4 @@
-from ASTNode import ASTNode
+from components.ASTNode import ASTNode
 
 #Nodo para imprimir, que puede tener una expresión a imprimir
 #Ejemplo: print(x), print(5 + 3), etc.

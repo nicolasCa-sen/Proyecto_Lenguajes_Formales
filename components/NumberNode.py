@@ -1,4 +1,4 @@
-from ASTNode import ASTNode
+from components.ASTNode import ASTNode
 
 #Nodo para números, sean enteros o reales
 #Ejemplo: 5, 3.14, etc.

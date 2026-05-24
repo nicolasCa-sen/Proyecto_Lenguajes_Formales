@@ -1,4 +1,4 @@
-from ASTNode import ASTNode
+from components.ASTNode import ASTNode
 
 #Nodo para asignaciones 
 #Ejemplo: let x = 5, base = 3.14, etc.

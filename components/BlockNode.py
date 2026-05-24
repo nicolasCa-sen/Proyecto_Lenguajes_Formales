@@ -1,4 +1,4 @@
-from ASTNode import ASTNode
+from components.ASTNode import ASTNode
 
 #Nodo para bloques de codigo, que pueden contener múltiples sentencias
 #Ejemplo: { let x = 5; let y = 3.14; x + y; }

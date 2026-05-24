@@ -1,13 +1,14 @@
-from BinOpNode import BinOpNode
-from NumberNode import NumberNode
-from VariableNode import VariableNode
-from WhileNode import WhileNode
-from BlockNode import BlockNode
-from PrintNode import PrintNode
-from PrintTreeAST import print_ast
-
 # index.py
 # ... (tus imports permanecen igual)
+
+from services.PrintTreeAST import print_ast
+from components.BinOpNode import BinOpNode
+from components.BlockNode import BlockNode
+from components.NumberNode import NumberNode
+from components.PrintNode import PrintNode
+from components.VariableNode import VariableNode
+from components.WhileNode import WhileNode
+
 
 def run_test():
     print(" Simulando AST para: while x != 5 { print(x) } ")

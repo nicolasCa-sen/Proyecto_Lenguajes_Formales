@@ -1,5 +1,4 @@
-from ASTNode import ASTNode
-
+from components.ASTNode import ASTNode
 #Nodo para llamar funciones, que pueden tener argumentos
 #Ejemplo: add(5, 3), print(x), etc.
 class FuncCallNode(ASTNode):

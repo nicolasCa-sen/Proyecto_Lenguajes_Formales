@@ -1,5 +1,4 @@
-from ASTNode import ASTNode
-
+from components.ASTNode import ASTNode
 #Nodo para funciones, que pueden tener parámetros y un cuerpo de código
 #Ejemplo: def add(a, b): return a + b
 class FuncDefNode(ASTNode):

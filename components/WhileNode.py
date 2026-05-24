@@ -1,4 +1,4 @@
-from ASTNode import ASTNode
+from components.ASTNode import ASTNode
 
 #Nodo para la condicional while, que tiene una condición y un bloque de código a ejecutar mientras la condición sea verdadera
 #Ejemplo: while x < 5: print(x)

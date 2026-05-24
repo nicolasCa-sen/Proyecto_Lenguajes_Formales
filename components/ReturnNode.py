@@ -1,4 +1,4 @@
-from ASTNode import ASTNode
+from components.ASTNode import ASTNode
 
 #Nodo para return, que puede tener una expresión a retornar
 #Ejemplo: return x + 5, return "Hello", etc.
