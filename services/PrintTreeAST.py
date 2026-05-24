@@ -1,4 +1,3 @@
-from components.ASTNode import ASTNode
 from components.AssignNode import AssignNode
 from components.BlockNode import BlockNode
 from components.FuncCallNode import FuncCallNode
