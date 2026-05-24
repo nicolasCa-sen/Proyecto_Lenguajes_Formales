@@ -55,3 +55,20 @@ def get_children(node):
     if isinstance(node, PrintNode): return [node.expression]
     if isinstance(node, FuncCallNode): return node.args
     return []
+
+#Convierte el AST en un diccionario/JSON para que la interfaz web lo dibuje.
+def ast_to_dict(node):
+    if node is None:
+        return None
+        
+    label = get_node_label_clean(node)
+
+    if hasattr(node, 'inferred_type'):
+        label += f" ({node.inferred_type})"
+        
+    children_nodes = get_children(node)
+    
+    return {
+        "name": label,
+        "children": [ast_to_dict(child) for child in children_nodes] if children_nodes else []
+    }
