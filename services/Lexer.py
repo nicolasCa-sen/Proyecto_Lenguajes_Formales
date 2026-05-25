@@ -15,13 +15,16 @@ class Lexer:
     def __init__(self, text):
         self.text = text
         self.tokens = []
+        self.errors = [] # Para recolectar errores léxicos
         
         # Definición de patrones de Tokens (Expresiones Regulares)
         self.token_specs = [
+            ('COMMENT',    r'--[^\n]*'),          # Comentarios de línea (ej: -- comentario)
+            ('STRING',     r'"[^"\n]*"'),         # Cadenas de texto (ej: "hola")
             ('REAL',       r'\d+\.\d+'),          # Números Reales (ej: 3.14)
             ('INT',        r'\d+'),               # Números Enteros (ej: 5)
+            ('OP',         r'==|!=|<=|>=|\+|-|\*|/|<|>|\^|%'), # Operadores aritméticos/comparación/potencia/modulo
             ('ASSIGN',     r'='),                 # Asignación
-            ('OP',         r'==|!=|<=|>=|\+|-|\*|/|<|>'), # Operadores aritméticos/comparación
             ('LPAREN',     r'\('),                # Paréntesis izquierdo
             ('RPAREN',     r'\)'),                # Paréntesis derecho
             ('LBRACE',     r'\{'),                # Llave izquierda
@@ -50,12 +53,19 @@ class Lexer:
                 continue
             elif kind == 'SKIP':
                 continue
+            elif kind == 'COMMENT':
+                continue
             elif kind == 'MISMATCH':
-                raise SyntaxError(f"Error Léxico: Caracter ilegal '{value}' en línea {line_num}, columna {column}")
+                self.errors.append(f"Error Léxico: Carácter inesperado '{value}' en línea {line_num}, columna {column}")
+                continue
+            
+            # Limpiar comillas en strings
+            if kind == 'STRING':
+                value = value[1:-1]
             
             # Verificar si el ID es en realidad una palabra clave (Keywords)
             if kind == 'ID':
-                keywords = {'while', 'if', 'else', 'def', 'return', 'print', 'and', 'or', 'let'}
+                keywords = {'while', 'if', 'else', 'def', 'return', 'print', 'and', 'or', 'let', 'not', 'true', 'false'}
                 if value in keywords:
                     kind = value.upper() # Cambia el tipo a 'WHILE', 'IF', etc.
             

@@ -1,25 +1,152 @@
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
+
 from services.Lexer import Lexer
-from services.Interpreter import Interpreter
+from services.Parser import Parser
 from services.SemanticAnalyzer import SemanticAnalyzer, SemanticError
+from services.Interpreter import Interpreter, RuntimeError
 from services.PrintTreeAST import ast_to_dict
 
-app = Flask(__name__)
-CORS(app) # Permite la conexión con la interfaz de Flask de tu compañero
+app = Flask(__name__, template_folder="templates")
+CORS(app)
 
-# Instancia persistente para la Fase 5 (Mantiene las variables vivas en el REPL)
-interpreter_instance = Interpreter()
+# RUTA PRINCIPAL: Sirve la aplicación web académica
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-# ENDPOINT 1: FASE LÉXICA
-# Recibe: Código plano. Devuelve: Lista de Tokens y Logs.
+
+# ENDPOINT DE EJECUCIÓN INTEGRADO COMPLETO (Pipeline completo)
+@app.route('/api/run', methods=['POST'])
+def run_pipeline():
+    data = request.json or {}
+    code = data.get("code", "")
+    
+    if not code.strip():
+        return jsonify({
+            "status": "error",
+            "message": "Código vacío",
+            "lex_errors": [],
+            "syntax_errors": ["Error Sintáctico: El código fuente está vacío."],
+            "semantic_errors": [],
+            "runtime_error": None,
+            "stdout": [],
+            "ast_tree_ui": None,
+            "result": None
+        }), 200
+
+    # 1. Fase Léxica
+    lexer = Lexer(code)
+    try:
+        tokens = lexer.tokenize()
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "lex_errors": [f"Error Léxico Crítico: {str(e)}"],
+            "syntax_errors": [],
+            "semantic_errors": [],
+            "runtime_error": None,
+            "stdout": [],
+            "ast_tree_ui": None,
+            "result": None
+        }), 200
+
+    lex_errors = lexer.errors
+
+    # 2. Fase Sintáctica (Parser)
+    parser = Parser(tokens)
+    try:
+        ast = parser.parse()
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "lex_errors": lex_errors,
+            "syntax_errors": [f"Error Sintáctico Crítico: {str(e)}"],
+            "semantic_errors": [],
+            "runtime_error": None,
+            "stdout": [],
+            "ast_tree_ui": None,
+            "result": None
+        }), 200
+
+    syntax_errors = parser.errors
+
+    if syntax_errors:
+        return jsonify({
+            "status": "error",
+            "lex_errors": lex_errors,
+            "syntax_errors": syntax_errors,
+            "semantic_errors": [],
+            "runtime_error": None,
+            "stdout": [],
+            "ast_tree_ui": ast_to_dict(ast) if ast else None,
+            "result": None
+        }), 200
+
+    # 3. Fase Semántica
+    semantic_analyzer = SemanticAnalyzer()
+    try:
+        semantic_analyzer.analyze(ast)
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "lex_errors": lex_errors,
+            "syntax_errors": syntax_errors,
+            "semantic_errors": [f"Error Semántico Crítico: {str(e)}"],
+            "runtime_error": None,
+            "stdout": [],
+            "ast_tree_ui": ast_to_dict(ast),
+            "result": None
+        }), 200
+
+    semantic_errors = semantic_analyzer.errors
+
+    if semantic_errors:
+        return jsonify({
+            "status": "error",
+            "lex_errors": lex_errors,
+            "syntax_errors": syntax_errors,
+            "semantic_errors": semantic_errors,
+            "runtime_error": None,
+            "stdout": [],
+            "ast_tree_ui": ast_to_dict(ast),
+            "result": None
+        }), 200
+
+    # 4. Fase de Ejecución (Intérprete)
+    interpreter = Interpreter()
+    runtime_error = None
+    result = None
+    try:
+        result = interpreter.execute(ast)
+    except RuntimeError as e:
+        runtime_error = str(e)
+    except Exception as e:
+        runtime_error = f"Error Crítico en Tiempo de Ejecución: {str(e)}"
+
+    status = "error" if runtime_error else "success"
+
+    return jsonify({
+        "status": status,
+        "lex_errors": lex_errors,
+        "syntax_errors": syntax_errors,
+        "semantic_errors": semantic_errors,
+        "runtime_error": runtime_error,
+        "stdout": interpreter.stdout,
+        "ast_tree_ui": ast_to_dict(ast),
+        "result": str(result) if result is not None else None
+    }), 200
+
+
+# ENDPOINT 1: FASE LÉXICA INDIVIDUAL
 @app.route('/api/lex', methods=['POST'])
 def run_lexer():
     data = request.json or {}
     code = data.get("code", "")
     
     if not code.strip():
-        return jsonify({"status": "error", "message": "Código vacío"}), 400
+        return jsonify({"status": "error", "message": "Código vacío", "logs": ["Código vacío"]}), 400
         
     logs = [" Iniciando Fase 1: Análisis Léxico..."]
     try:
@@ -28,20 +155,24 @@ def run_lexer():
         
         for t in tokens:
             logs.append(f"lex: Encontrado -> {t.type}('{t.value}') en [L:{t.line}, C:{t.column}]")
-        logs.append("lex: OK - Todos los tokens identificados correctamente.")
         
+        if lexer.errors:
+            for err in lexer.errors:
+                logs.append(err)
+            return jsonify({"status": "error", "logs": logs, "tokens": []}), 200
+            
+        logs.append("lex: OK - Todos los tokens identificados correctamente.")
         return jsonify({
             "status": "success",
             "logs": logs,
-            "tokens": [t.to_dict() for t in tokens] # Tu compañero usará esta lista para su Parser
+            "tokens": [t.to_dict() for t in tokens]
         }), 200
     except Exception as e:
-        logs.append(f"ERROR LÉXICO: {str(e)}")
-        return jsonify({"status": "error", "logs": logs}), 200
+        logs.append(f"ERROR LÉXICO CRÍTICO: {str(e)}")
+        return jsonify({"status": "error", "logs": logs, "tokens": []}), 200
 
 
-# ENDPOINT 2: FASE SINTÁCTICA (Nicolas)
-# Recibe: La lista de tokens (o el código). Devuelve: El árbol AST en JSON y Logs.
+# ENDPOINT 2: FASE SINTÁCTICA INDIVIDUAL
 @app.route('/api/syntax', methods=['POST'])
 def run_parser():
     data = request.json or {}
@@ -49,107 +180,107 @@ def run_parser():
     
     logs = ["Iniciando Fase 2 y 3: Análisis Sintáctico..."]
     try:
-        # AQUI TU COMPAÑERO CONECTARÁ SU PARSER:
-        # lexer = Lexer(code)
-        # tokens = lexer.tokenize()
-        # parser = Parser(tokens)
-        # ast = parser.parse()
+        lexer = Lexer(code)
+        tokens = lexer.tokenize()
+        parser = Parser(tokens)
+        ast = parser.parse()
         
+        if parser.errors:
+            for err in parser.errors:
+                logs.append(err)
+            return jsonify({"status": "error", "logs": logs, "ast": None}), 200
+            
         logs.append("sin: OK - Gramática correcta. Árbol AST generado.")
-        
-        # Simulación del árbol que el Parser de tu compañero debería retornar en JSON:
-        ast_simulado = {
-            "type": "WhileNode", "line": 1, "column": 1,
-            "condition": {"type": "BinOpNode", "op": "!=", "left": {"type": "VariableNode", "name": "x"}, "right": {"type": "NumberNode", "value": "5"}},
-            "body": {"type": "BlockNode", "statements": [{"type": "PrintNode", "expression": {"type": "VariableNode", "name": "x"}}]}
-        }
-        
         return jsonify({
             "status": "success",
             "logs": logs,
-            "ast": ast_simulado # Este JSON representa la estructura pura del árbol
+            "ast": ast_to_dict(ast)
         }), 200
     except Exception as e:
-        logs.append(f"ERROR SINTÁCTICO: {str(e)}")
-        return jsonify({"status": "error", "logs": logs}), 200
+        logs.append(f"ERROR SINTÁCTICO CRÍTICO: {str(e)}")
+        return jsonify({"status": "error", "logs": logs, "ast": None}), 200
 
-# ENDPOINT 3: FASE SEMÁNTICA Y DIBUJO
-# Recibe: El AST JSON del endpoint anterior. Devuelve: Logs semánticos y Formato UI.
+
+# ENDPOINT 3: FASE SEMÁNTICA INDIVIDUAL
 @app.route('/api/semantic', methods=['POST'])
 def run_semantic():
     data = request.json or {}
-    ast_json = data.get("ast", None)
+    code = data.get("code", "")
     
     logs = [">>> Iniciando Fase 4: Análisis Semántico..."]
-    if not ast_json:
-        return jsonify({"status": "error", "message": "No se recibió estructura AST"}), 400
-        
     try:
-        # 1. Convertimos el JSON que mandó el cliente a nodos reales de Python
-        # (Aquí se usaría la función dict_to_node que mapea a tus clases de nodos)
-        # ast_real = dict_to_node(ast_json)
+        lexer = Lexer(code)
+        tokens = lexer.tokenize()
+        parser = Parser(tokens)
+        ast = parser.parse()
         
-        # 2. Corremos tu analizador semántico sobre el árbol
-        # semantic_analyzer = SemanticAnalyzer()
-        # semantic_analyzer.analyze(ast_real)
+        if parser.errors:
+            logs.append("No se puede realizar análisis semántico debido a errores sintácticos.")
+            return jsonify({"status": "error", "logs": logs, "ast_tree_ui": None}), 200
+            
+        semantic_analyzer = SemanticAnalyzer()
+        semantic_analyzer.analyze(ast)
         
+        if semantic_analyzer.errors:
+            for err in semantic_analyzer.errors:
+                logs.append(err)
+            return jsonify({"status": "error", "logs": logs, "ast_tree_ui": ast_to_dict(ast)}), 200
+            
         logs.append("sem: OK - Variables validadas. Tipos anotados e inferidos con éxito.")
-        
-        # 3. Convertimos el árbol anotado al formato que la librería web necesita para dibujar círculos y líneas
-        # ast_para_grafico = ast_to_dict(ast_real)
-        
-        # Simulación de respuesta para la UI gráfica (círculos y líneas del panel derecho)
-        ast_para_grafico = {
-            "name": "while",
-            "children": [
-                {"name": "Op: != (Bool)"},
-                {"name": "block", "children": [{"name": "print"}]}
-            ]
-        }
-        
         return jsonify({
             "status": "success",
             "logs": logs,
-            "ast_tree_ui": ast_para_grafico # Tu compañero toma esto para dibujar el árbol gráfico
+            "ast_tree_ui": ast_to_dict(ast)
         }), 200
-    except SemanticError as e:
-        logs.append(f"ERROR SEMÁNTICO DETECTADO: {str(e)}")
-        return jsonify({"status": "error", "logs": logs}), 200
     except Exception as e:
-        logs.append(f"ERROR CRÍTICO SEMÁNTICO: {str(e)}")
-        return jsonify({"status": "error", "logs": logs}), 200
+        logs.append(f"ERROR SEMÁNTICO CRÍTICO: {str(e)}")
+        return jsonify({"status": "error", "logs": logs, "ast_tree_ui": None}), 200
 
 
-# ENDPOINT 4: FASE 5 - EJECUCIÓN / INTERPRETE
-# Recibe: El AST JSON. Devuelve: Resultado de la ejecución en tiempo de real.
-
+# ENDPOINT 4: FASE EJECUCIÓN INDIVIDUAL
 @app.route('/api/interpreter', methods=['POST'])
 def run_interpreter():
     data = request.json or {}
-    ast_json = data.get("ast", None)
+    code = data.get("code", "")
     
     logs = [">>> Iniciando Fase 5: Entorno de Ejecución (REPL)..."]
-    if not ast_json:
-        return jsonify({"status": "error", "message": "No se recibió estructura AST"}), 400
-        
     try:
-        # Reconstruimos el AST a objetos Python
-        # ast_real = dict_to_node(ast_json)
+        lexer = Lexer(code)
+        tokens = lexer.tokenize()
+        parser = Parser(tokens)
+        ast = parser.parse()
         
-        # Ejecutamos usando tu clase Interpreter (que se mantiene viva en memoria)
-        # resultado = interpreter_instance.execute(ast_real)
-        resultado = "Ejecución Completada con éxito" # Simulación temporal
+        if parser.errors or lexer.errors:
+            logs.append("No se puede ejecutar debido a errores léxicos o sintácticos.")
+            return jsonify({"status": "error", "logs": logs, "result": None}), 200
+            
+        semantic_analyzer = SemanticAnalyzer()
+        semantic_analyzer.analyze(ast)
         
-        logs.append(f"int: OK - Código ejecutado en el entorno. Fin de la traza.")
+        if semantic_analyzer.errors:
+            logs.append("No se puede ejecutar debido a errores semánticos.")
+            return jsonify({"status": "error", "logs": logs, "result": None}), 200
+            
+        interpreter = Interpreter()
+        resultado = interpreter.execute(ast)
         
+        for print_out in interpreter.stdout:
+            logs.append(f"[Stdout]: {print_out}")
+            
+        logs.append(f"int: OK - Código ejecutado con éxito. Retorno: {resultado}")
         return jsonify({
             "status": "success",
             "logs": logs,
-            "result": resultado
+            "result": str(resultado) if resultado is not None else "Ejecutado sin retorno"
         }), 200
-    except Exception as e:
+    except RuntimeError as e:
         logs.append(f"ERROR EN TIEMPO DE EJECUCIÓN (Runtime): {str(e)}")
         return jsonify({"status": "error", "logs": logs, "result": None}), 200
+    except Exception as e:
+        logs.append(f"ERROR CRÍTICO EN EJECUCIÓN: {str(e)}")
+        return jsonify({"status": "error", "logs": logs, "result": None}), 200
+
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)

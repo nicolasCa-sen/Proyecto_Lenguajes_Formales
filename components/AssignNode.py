@@ -7,3 +7,7 @@ class AssignNode(ASTNode):
         self.var = var    # Nodo de variable
         self.value = value_node  # Nodo de la expresión a asignar (puede ser un NumberNode, BinOpNode, etc.)
         super().__init__(line, column)  # Llamamos al constructor de la clase base para asignar línea y columna
+
+    @property
+    def name(self):
+        return self.var.name

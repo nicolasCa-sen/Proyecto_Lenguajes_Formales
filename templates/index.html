@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathLite DSL — Entorno de Pruebas Académico</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-base: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-input: #ffffff;
+            --border-color: #cbd5e1;
+            
+            --primary: #1e40af; /* Azul Académico Estándar */
+            --primary-hover: #1d4ed8;
+            --accent: #475569;
+            
+            --success: #15803d; /* Verde Estándar */
+            --error: #b91c1c; /* Rojo Estándar */
+            --warning: #a16207;
+            
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-dim: #94a3b8;
+            
+            --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-code: 'Fira Code', monospace;
+            
+            --transition-quick: all 0.15s ease;
+            --border-radius: 6px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Top Header */
+        header {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            background: var(--primary);
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .logo-title h1 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .logo-title span {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .badge {
+            background: #e2e8f0;
+            border: 1px solid #cbd5e1;
+            color: var(--text-muted);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.65rem;
+        }
+
+        /* Layout Grid */
+        .workspace {
+            display: grid;
+            grid-template-columns: 280px 1fr 1fr;
+            flex-grow: 1;
+            height: calc(100vh - 57px);
+        }
+
+        /* Panels Shared */
+        .panel {
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-surface);
+        }
+
+        .panel-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f5f9;
+        }
+
+        .panel-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 700;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .panel-title i {
+            color: var(--primary);
+        }
+
+        /* LEFT PANEL: Static Guide Test Cases */
+        #panel-database {
+            width: 280px;
+        }
+
+        .case-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #f8fafc;
+        }
+
+        .case-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            cursor: pointer;
+            transition: var(--transition-quick);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .case-card:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+
+        .case-card.active {
+            background: #eff6ff;
+            border-color: var(--primary);
+        }
+
+        .case-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .case-name i {
+            color: var(--primary);
+            font-size: 0.7rem;
+        }
+
+        .case-desc {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            line-height: 1.25;
+        }
+
+        /* CENTER PANEL: Code Editor & Console Output */
+        #panel-editor {
+            display: grid;
+            grid-template-rows: auto 1fr auto 140px;
+        }
+
+        .editor-container {
+            position: relative;
+            background: #ffffff;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .line-numbers {
+            width: 36px;
+            padding: 12px 6px 12px 0;
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            text-align: right;
+            color: var(--text-dim);
+            background: #f8fafc;
+            border-right: 1px solid var(--border-color);
+            user-select: none;
+            line-height: 1.45;
+        }
+
+        .code-textarea {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            line-height: 1.45;
+            padding: 12px;
+            resize: none;
+            outline: none;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        /* Console Output */
+        .console-header {
+            background: #e2e8f0;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 6px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .console-container {
+            background: #0f172a; /* Slate oscuro para consola académica */
+            font-family: var(--font-code);
+            font-size: 0.78rem;
+            padding: 12px 16px;
+            overflow-y: auto;
+            color: #22c55e;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .console-line {
+            display: flex;
+            gap: 8px;
+            line-height: 1.35;
+        }
+
+        .console-prompt {
+            color: #38bdf8;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        .console-line.error {
+            color: #ef4444;
+        }
+        .console-line.info {
+            color: #94a3b8;
+        }
+        .console-line.header-line {
+            color: #e2e8f0;
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 2px;
+            margin-bottom: 4px;
+        }
+
+        /* RIGHT PANEL: AST Visualizer & Diagnostic Panel Tabs */
+        #panel-ast {
+            border-right: none;
+            display: grid;
+            grid-template-rows: auto 1fr auto 140px;
+        }
+
+        .ast-container {
+            background: #ffffff;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .ast-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        .ast-canvas:active {
+            cursor: grabbing;
+        }
+
+        .ast-controls {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 4px;
+            display: flex;
+            gap: 4px;
+            z-index: 10;
+        }
+
+        .btn-mini {
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            width: 24px;
+            height: 24px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: var(--transition-quick);
+        }
+
+        .btn-mini:hover {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+        }
+
+        /* Diagnostics & Tabs */
+        .tabs-header {
+            background: #e2e8f0;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+        }
+
+        .tab {
+            padding: 10px 14px;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition-quick);
+            border-bottom: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tab:hover {
+            color: var(--text-main);
+            background: #f1f5f9;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: var(--bg-surface);
+        }
+
+        .tab.has-error {
+            color: var(--error);
+        }
+
+        .tab.has-error.active {
+            border-bottom-color: var(--error);
+        }
+
+        .diagnostics-content {
+            background: #ffffff;
+            padding: 10px 16px;
+            overflow-y: auto;
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .diag-row {
+            display: flex;
+            gap: 8px;
+            line-height: 1.35;
+            padding: 2px 0;
+        }
+
+        .diag-status {
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .diag-status.ok {
+            color: var(--success);
+        }
+
+        .diag-status.fail {
+            color: var(--error);
+        }
+
+        .diag-msg {
+            color: var(--text-main);
+        }
+
+        /* SVG Graph Node styles (Academic clean look) */
+        .node circle {
+            stroke-width: 1.5px;
+            fill: #f8fafc;
+            stroke: #475569;
+        }
+        
+        .node text {
+            font-family: var(--font-ui);
+            font-size: 9px;
+            font-weight: 500;
+            fill: #0f172a;
+            pointer-events: none;
+        }
+
+        .link {
+            fill: none;
+            stroke: #cbd5e1;
+            stroke-width: 1.2px;
+        }
+        
+        .link.active {
+            stroke: #64748b;
+        }
+        
+        /* Floating notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 10px 16px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            z-index: 2000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: var(--transition-quick);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.error {
+            background: #b91c1c;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header UI -->
+    <header>
+        <div class="header-logo">
+            <div class="logo-icon">ML</div>
+            <div class="logo-title">
+                <h1>MathLite</h1>
+                <span>Intérprete Escolar de Lenguajes Formales</span>
+            </div>
+        </div>
+        <div class="header-meta">
+            <div><i class="fa-solid fa-server"></i> Servidor: <span style="color: var(--success); font-weight: 600;">En línea</span></div>
+            <div class="badge">PROYECTO FINAL</div>
+        </div>
+    </header>
+
+    <!-- Workspace container -->
+    <div class="workspace">
+        
+        <!-- LEFT PANEL: Static Guide Test Cases -->
+        <div class="panel" id="panel-database">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fa-solid fa-graduation-cap"></i> Ejemplos de la Guía
+                </div>
+            </div>
+            <div class="case-list" id="case-list-container">
+                <!-- Statically populated from JavaScript on load -->
+            </div>
+        </div>
+
+        <!-- CENTER PANEL: Editor & Console -->
+        <div class="panel" id="panel-editor">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fa-solid fa-file-code"></i> Entrada de Código
+                </div>
+                <button class="btn btn-run" onclick="runCode()">
+                    <i class="fa-solid fa-play"></i> Analizar y Ejecutar
+                </button>
+            </div>
+            <div class="editor-container">
+                <div class="line-numbers" id="line-counter">1</div>
+                <textarea class="code-textarea" id="code-editor" placeholder="-- Escriba su código MathLite aquí..." oninput="updateLineCounter()" onscroll="syncScroll()"></textarea>
+            </div>
+            <div class="console-header">
+                <div class="panel-title" style="font-size: 0.7rem;">
+                    <i class="fa-solid fa-terminal"></i> Salida del Intérprete
+                </div>
+                <div style="font-size: 0.65rem; color: var(--text-muted)" id="run-time-meta">Espera</div>
+            </div>
+            <div class="console-container" id="console-output">
+                <div class="console-line info">
+                    <span class="console-prompt">&gt;</span>
+                    <span>El entorno académico se encuentra inicializado. Seleccione un ejemplo de la guía.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: AST Visualizer & Tab Diagnostics -->
+        <div class="panel" id="panel-ast">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fa-solid fa-network-wired"></i> Estructura del Árbol (AST)
+                </div>
+            </div>
+            <div class="ast-container">
+                <svg class="ast-canvas" id="ast-svg">
+                    <g id="ast-viewport"></g>
+                </svg>
+                
+                <div class="ast-controls">
+                    <button class="btn-mini" onclick="zoomAST(1.15)" title="Acercar"><i class="fa-solid fa-plus"></i></button>
+                    <button class="btn-mini" onclick="zoomAST(0.85)" title="Alejar"><i class="fa-solid fa-minus"></i></button>
+                    <button class="btn-mini" onclick="resetASTView()" title="Centrar"><i class="fa-solid fa-compress"></i></button>
+                </div>
+            </div>
+            
+            <!-- Diagnostics Tabs -->
+            <div class="tabs-header">
+                <div class="tab active" id="tab-lex" onclick="switchTab('lex')">Léxico</div>
+                <div class="tab" id="tab-syntax" onclick="switchTab('syntax')">Sintáctico</div>
+                <div class="tab" id="tab-semantic" onclick="switchTab('semantic')">Semántico</div>
+                <div class="tab" id="tab-interpreter" onclick="switchTab('interpreter')">Ejecución</div>
+            </div>
+            <div class="diagnostics-content" id="diagnostics-panel">
+                <div class="diag-row">
+                    <span class="diag-status ok">OK</span>
+                    <span class="diag-msg">Sin análisis reciente.</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="toast" id="toast-notif">
+        <i class="fa-solid fa-circle-info"></i>
+        <span id="toast-text"></span>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        
+        // Statically burned test cases from the project's formal guide
+        const loadedCases = [
+            {
+                "name": "1. Expresión Mixta",
+                "description": "Fórmula obligatoria con precedencia: (3 + 4 * 2) / (1 - 5)^2",
+                "code": "-- Expresión obligatoria con precedencia mixta\nlet resultado = (3 + 4 * 2) / (1 - 5)^2\nprint(resultado)"
+            },
+            {
+                "name": "2. Factorial Recursivo",
+                "description": "Función factorial recursiva con llamada y print de resultado",
+                "code": "-- Función factorial recursiva\ndef factorial(n) {\n  if n <= 1 {\n    return 1\n  }\n  return n * factorial(n - 1)\n}\n\nlet res = factorial(5)\nprint(\"El factorial de 5 es:\")\nprint(res)"
+            },
+            {
+                "name": "3. Acumulador con Ciclo While",
+                "description": "Bucle while estructurado que acumula la suma de 1 a n",
+                "code": "-- Suma acumulativa de 1 a n\nlet n = 10\nlet i = 1\nlet suma = 0\nwhile i <= n {\n  let suma = suma + i\n  let i = i + 1\n}\nprint(\"Suma acumulada de 1 a 10:\")\nprint(suma)"
+            },
+            {
+                "name": "4. Funciones Trigonométricas",
+                "description": "Llamadas a sin, cos y sqrt dentro de expresiones compuestas",
+                "code": "-- Pruebas de funciones matemáticas trigonométricas\nlet angulo = 0.785398 -- Aprox pi/4 (45 grados)\nlet s = sin(angulo)\nlet c = cos(angulo)\nlet raiz = sqrt(2.0)\n\nprint(\"Seno de pi/4:\")\nprint(s)\nprint(\"Coseno de pi/4:\")\nprint(c)\nprint(\"Raiz cuadrada de 2:\")\nprint(raiz)"
+            },
+            {
+                "name": "5. Funciones Anidadas",
+                "description": "Una función que llama a otra función definida en el mismo programa",
+                "code": "-- Funciones anidadas en MathLite\ndef duplicar(x) {\n  return x * 2\n}\n\ndef operar(y) {\n  let d = duplicar(y)\n  return d + 5\n}\n\nlet res = operar(10)\nprint(\"Resultado de operar(10) -> (10 * 2) + 5:\")\nprint(res)"
+            }
+        ];
+        
+        let currentActiveCase = null;
+        let lastExecutionResults = null;
+        let activeTab = 'lex';
+        
+        let zoom = 1.0;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let startX, startY;
+        
+        const svg = document.getElementById('ast-svg');
+        const viewport = document.getElementById('ast-viewport');
+        
+        svg.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX - panX;
+            startY = e.clientY - panY;
+        });
+        
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            panX = e.clientX - startX;
+            panY = e.clientY - startY;
+            updateTransform();
+        });
+        
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        svg.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const scaleFactor = 1.1;
+            if (e.deltaY < 0) {
+                zoom *= scaleFactor;
+            } else {
+                zoom /= scaleFactor;
+            }
+            updateTransform();
+        });
+        
+        function updateTransform() {
+            viewport.setAttribute('transform', `translate(${panX}, ${panY}) scale(${zoom})`);
+        }
+        
+        function zoomAST(factor) {
+            zoom *= factor;
+            updateTransform();
+        }
+        
+        function resetASTView() {
+            zoom = 1.0;
+            panX = svg.clientWidth / 2;
+            panY = 40;
+            updateTransform();
+        }
+
+        window.onload = function() {
+            syncScroll();
+            renderCases(loadedCases);
+            resetASTView();
+            
+            // Cargar primer ejemplo por defecto
+            selectCase(0);
+        };
+
+        function updateLineCounter() {
+            const editor = document.getElementById('code-editor');
+            const counter = document.getElementById('line-counter');
+            const lines = editor.value.split('\n').length;
+            
+            let linesHtml = '';
+            for (let i = 1; i <= lines; i++) {
+                linesHtml += `${i}<br>`;
+            }
+            counter.innerHTML = linesHtml;
+        }
+
+        function syncScroll() {
+            const editor = document.getElementById('code-editor');
+            const counter = document.getElementById('line-counter');
+            counter.scrollTop = editor.scrollTop;
+        }
+        
+        document.getElementById('code-editor').addEventListener('scroll', syncScroll);
+
+        function renderCases(cases) {
+            const listContainer = document.getElementById('case-list-container');
+            listContainer.innerHTML = cases.map((c, i) => `
+                <div class="case-card ${currentActiveCase && currentActiveCase.name === c.name ? 'active' : ''}" onclick="selectCase(${i})">
+                    <div class="case-name">
+                        <span>${c.name}</span>
+                        <i class="fa-solid fa-file-alt"></i>
+                    </div>
+                    <div class="case-desc">${c.description || ''}</div>
+                </div>
+            `).join('');
+        }
+        
+        function selectCase(index) {
+            const selected = loadedCases[index];
+            currentActiveCase = selected;
+            
+            renderCases(loadedCases);
+            document.getElementById('code-editor').value = selected.code;
+            updateLineCounter();
+            showToast(`Cargado: ${selected.name}`);
+        }
+
+        async function runCode() {
+            const code = document.getElementById('code-editor').value;
+            const consoleOutput = document.getElementById('console-output');
+            const timeMeta = document.getElementById('run-time-meta');
+            
+            consoleOutput.innerHTML = `
+                <div class="console-line info">
+                    <span class="console-prompt">&gt;</span>
+                    <span>Procesando código fuente en el compilador...</span>
+                </div>
+            `;
+            
+            const start = performance.now();
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/run`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                
+                if (!response.ok) throw new Error("Fallo");
+                
+                const data = await response.json();
+                lastExecutionResults = data;
+                
+                const duration = (performance.now() - start).toFixed(1);
+                timeMeta.innerHTML = `${duration}ms`;
+                
+                renderConsoleOutput(data);
+                renderDiagnosticsPanel(data);
+                renderAST(data.ast_tree_ui);
+                
+            } catch (err) {
+                console.error(err);
+                timeMeta.innerHTML = `Error`;
+                consoleOutput.innerHTML = `
+                    <div class="console-line error">
+                        <span class="console-prompt">ERR</span>
+                        <span>Fallo de red al conectar con Flask.</span>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderConsoleOutput(data) {
+            const container = document.getElementById('console-output');
+            container.innerHTML = '';
+            
+            container.innerHTML += `
+                <div class="console-line header-line">
+                    <span class="console-prompt">&gt;&gt;</span>
+                    <span>Trazas del compilador MathLite</span>
+                </div>
+            `;
+            
+            if (data.lex_errors && data.lex_errors.length > 0) {
+                data.lex_errors.forEach(err => {
+                    container.innerHTML += `<div class="console-line error"><span class="console-prompt">[Lex]</span><span>${err}</span></div>`;
+                });
+            }
+            
+            if (data.syntax_errors && data.syntax_errors.length > 0) {
+                data.syntax_errors.forEach(err => {
+                    container.innerHTML += `<div class="console-line error"><span class="console-prompt">[Syn]</span><span>${err}</span></div>`;
+                });
+            }
+            
+            if (data.semantic_errors && data.semantic_errors.length > 0) {
+                data.semantic_errors.forEach(err => {
+                    container.innerHTML += `<div class="console-line error"><span class="console-prompt">[Sem]</span><span>${err}</span></div>`;
+                });
+            }
+
+            if (data.stdout && data.stdout.length > 0) {
+                data.stdout.forEach(line => {
+                    container.innerHTML += `<div class="console-line"><span class="console-prompt">[Stdout]</span><span>${line}</span></div>`;
+                });
+            }
+
+            if (data.runtime_error) {
+                container.innerHTML += `<div class="console-line error"><span class="console-prompt">[Runtime]</span><span>${data.runtime_error}</span></div>`;
+            }
+
+            if (data.status === "success") {
+                container.innerHTML += `
+                    <div class="console-line info" style="color: #22c55e;">
+                        <span class="console-prompt">&gt;</span>
+                        <span>Proceso finalizado. Retorno: ${data.result !== "None" && data.result !== null ? data.result : 'void'}</span>
+                    </div>
+                `;
+                showToast("Procesamiento exitoso");
+            } else {
+                container.innerHTML += `
+                    <div class="console-line error">
+                        <span class="console-prompt">&gt;</span>
+                        <span>Proceso finalizado con errores.</span>
+                    </div>
+                `;
+                showToast("Se encontraron fallos", true);
+            }
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            activeTab = tabId;
+            
+            if (lastExecutionResults) {
+                renderDiagnosticsPanel(lastExecutionResults);
+            }
+        }
+        
+        function renderDiagnosticsPanel(data) {
+            const panel = document.getElementById('diagnostics-panel');
+            panel.innerHTML = '';
+            
+            updateTabBadge('lex', data.lex_errors);
+            updateTabBadge('syntax', data.syntax_errors);
+            updateTabBadge('semantic', data.semantic_errors);
+            updateTabBadge('interpreter', data.runtime_error ? [data.runtime_error] : []);
+            
+            let currentErrors = [];
+            let phaseName = "";
+            let successMsg = "";
+            
+            if (activeTab === 'lex') {
+                currentErrors = data.lex_errors || [];
+                phaseName = "Analizador Léxico";
+                successMsg = "Léxico correcto.";
+            } else if (activeTab === 'syntax') {
+                currentErrors = data.syntax_errors || [];
+                phaseName = "Analizador Sintáctico (Parser)";
+                successMsg = "Árbol AST generado sin errores.";
+            } else if (activeTab === 'semantic') {
+                currentErrors = data.semantic_errors || [];
+                phaseName = "Analizador Semántico";
+                successMsg = "Tipos validados y ámbitos conformes.";
+            } else if (activeTab === 'interpreter') {
+                currentErrors = data.runtime_error ? [data.runtime_error] : [];
+                phaseName = "Intérprete (Tiempo de Ejecución)";
+                successMsg = "Ejecución correcta.";
+            }
+            
+            if (currentErrors.length === 0) {
+                panel.innerHTML = `
+                    <div class="diag-row">
+                        <span class="diag-status ok">Correcto</span>
+                        <span class="diag-msg">[${phaseName}] ${successMsg}</span>
+                    </div>
+                `;
+            } else {
+                currentErrors.forEach(err => {
+                    panel.innerHTML += `
+                        <div class="diag-row">
+                            <span class="diag-status fail">Error</span>
+                            <span class="diag-msg">${err}</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+        
+        function updateTabBadge(tabId, errorsList) {
+            const tab = document.getElementById(`tab-${tabId}`);
+            if (errorsList && errorsList.length > 0) {
+                tab.classList.add('has-error');
+                tab.innerHTML = `${tabId.charAt(0).toUpperCase() + tabId.slice(1)} <i class="fa-solid fa-circle-exclamation"></i>`;
+            } else {
+                tab.classList.remove('has-error');
+                tab.innerHTML = tabId.charAt(0).toUpperCase() + tabId.slice(1);
+            }
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast-notif');
+            const text = document.getElementById('toast-text');
+            text.innerText = message;
+            
+            if (isError) {
+                toast.classList.add('error');
+            } else {
+                toast.classList.remove('error');
+            }
+            
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // Render Tree in SVG
+        function renderAST(treeData) {
+            const viewport = document.getElementById('ast-viewport');
+            viewport.innerHTML = '';
+            
+            if (!treeData) {
+                viewport.innerHTML = `<text fill="#94a3b8" x="0" y="0" text-anchor="middle" font-size="11">AST no disponible</text>`;
+                return;
+            }
+            
+            const nodes = [];
+            const links = [];
+            
+            function traverse(node, depth = 0, siblingIndex = 0, parentNode = null) {
+                const nodeObj = {
+                    name: node.name,
+                    depth: depth,
+                    x: 0,
+                    y: depth * 80,
+                    children: [],
+                    parent: parentNode
+                };
+                
+                nodes.push(nodeObj);
+                
+                if (parentNode) {
+                    links.push({ source: parentNode, target: nodeObj });
+                    parentNode.children.push(nodeObj);
+                }
+                
+                if (node.children && node.children.length > 0) {
+                    node.children.forEach((child, i) => {
+                        traverse(child, depth + 1, i, nodeObj);
+                    });
+                }
+                
+                return nodeObj;
+            }
+            
+            const root = traverse(treeData);
+            
+            let leafCounter = 0;
+            const leafSpacing = 80;
+            
+            function assignX(node) {
+                if (!node.children || node.children.length === 0) {
+                    node.x = leafCounter * leafSpacing;
+                    leafCounter++;
+                } else {
+                    node.children.forEach(assignX);
+                    const sumX = node.children.reduce((sum, child) => sum + child.x, 0);
+                    node.x = sumX / node.children.length;
+                }
+            }
+            
+            assignX(root);
+            
+            const rootShift = root.x;
+            nodes.forEach(node => {
+                node.x -= rootShift;
+            });
+            
+            links.forEach(l => {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                path.setAttribute('x1', l.source.x);
+                path.setAttribute('y1', l.source.y);
+                path.setAttribute('x2', l.target.x);
+                path.setAttribute('y2', l.target.y);
+                path.setAttribute('class', 'link');
+                viewport.appendChild(path);
+            });
+            
+            nodes.forEach(n => {
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                group.setAttribute('transform', `translate(${n.x}, ${n.y})`);
+                group.setAttribute('class', 'node');
+                
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('r', '18');
+                
+                let fill = '#f8fafc';
+                let stroke = '#475569';
+                
+                const nameLower = n.name.toLowerCase();
+                if (nameLower.startsWith('let') || nameLower.includes('variable:')) {
+                    fill = '#eff6ff';
+                    stroke = '#1d4ed8';
+                } else if (nameLower.startsWith('op binaria') || nameLower.startsWith('op unaria')) {
+                    fill = '#faf5ff';
+                    stroke = '#7e22ce';
+                } else if (nameLower.startsWith('número') || nameLower.startsWith('cadena') || nameLower.startsWith('booleano')) {
+                    fill = '#f0fdf4';
+                    stroke = '#15803d';
+                } else if (nameLower.includes('if') || nameLower.includes('while') || nameLower.includes('bloque')) {
+                    fill = '#fef9c3';
+                    stroke = '#a16207';
+                } else if (nameLower.includes('llamada') || nameLower.includes('def ') || nameLower.includes('return')) {
+                    fill = '#fff1f2';
+                    stroke = '#be123c';
+                }
+                
+                circle.setAttribute('fill', fill);
+                circle.setAttribute('stroke', stroke);
+                group.appendChild(circle);
+                
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('y', '28'); 
+                text.setAttribute('text-anchor', 'middle');
+                text.textContent = n.name;
+                group.appendChild(text);
+                
+                const centerText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                centerText.setAttribute('y', '3');
+                centerText.setAttribute('text-anchor', 'middle');
+                centerText.setAttribute('font-size', '9px');
+                centerText.setAttribute('font-weight', '600');
+                
+                let short_lbl = "";
+                if (nameLower.includes('let')) short_lbl = "let";
+                else if (nameLower.includes('op binaria')) short_lbl = nameLower.split('op binaria: ')[1] || 'op';
+                else if (nameLower.includes('op unaria')) short_lbl = nameLower.split('op unaria: ')[1] || 'un';
+                else if (nameLower.includes('número')) short_lbl = nameLower.split('número: ')[1] || '#';
+                else if (nameLower.includes('cadena')) short_lbl = 'str';
+                else if (nameLower.includes('booleano')) short_lbl = nameLower.split('booleano: ')[1] || 'bool';
+                else if (nameLower.includes('variable:')) short_lbl = nameLower.split('variable: ')[1] || 'id';
+                else if (nameLower.includes('if')) short_lbl = 'if';
+                else if (nameLower.includes('while')) short_lbl = 'whl';
+                else if (nameLower.includes('bloque')) short_lbl = '{}';
+                else if (nameLower.includes('def')) short_lbl = 'def';
+                else if (nameLower.includes('llamada')) short_lbl = 'call';
+                else if (nameLower.includes('print')) short_lbl = 'prn';
+                else if (nameLower.includes('return')) short_lbl = 'ret';
+                else short_lbl = n.name.substring(0, 3);
+                
+                centerText.textContent = short_lbl;
+                centerText.setAttribute('fill', stroke);
+                group.appendChild(centerText);
+                
+                viewport.appendChild(group);
+            });
+            
+            resetASTView();
+        }
+    </script>
+</body>
+</html>

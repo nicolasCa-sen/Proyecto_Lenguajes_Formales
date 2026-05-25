@@ -6,3 +6,7 @@ class FuncCallNode(ASTNode):
         self.func_name = func_name  # Nombre de la función a llamar (string)
         self.args = args            # Lista de nodos que representan los argumentos de la función (pueden ser NumberNode, VariableNode, etc.)
         super().__init__(line, column)  # Llamamos al constructor de la clase base para asignar línea y columna
+
+    @property
+    def name(self):
+        return self.func_name
