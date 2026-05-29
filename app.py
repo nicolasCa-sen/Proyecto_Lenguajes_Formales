@@ -1,4 +1,14 @@
 import os
+
+# Cargar variables de entorno desde el archivo .env si existe
+if os.path.exists(".env"):
+    with open(".env", "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, val = line.split("=", 1)
+                os.environ[key.strip()] = val.strip()
+
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
@@ -7,9 +17,12 @@ from services.Parser import Parser
 from services.SemanticAnalyzer import SemanticAnalyzer, SemanticError
 from services.Interpreter import Interpreter, RuntimeError
 from services.PrintTreeAST import ast_to_dict
+from services.Database import Database
 
 app = Flask(__name__, template_folder="templates")
 CORS(app)
+
+db_instance = Database()
 
 # RUTA PRINCIPAL: Sirve la aplicación web académica
 @app.route('/')
@@ -279,6 +292,35 @@ def run_interpreter():
     except Exception as e:
         logs.append(f"ERROR CRÍTICO EN EJECUCIÓN: {str(e)}")
         return jsonify({"status": "error", "logs": logs, "result": None}), 200
+
+
+# ENDPOINTS DE PERSISTENCIA (NoSQL Database)
+@app.route('/api/test_cases', methods=['GET'])
+def get_test_cases():
+    cases = db_instance.get_all()
+    return jsonify(cases), 200
+
+@app.route('/api/test_cases', methods=['POST'])
+def save_test_case():
+    data = request.json or {}
+    name = data.get("name", "")
+    description = data.get("description", "")
+    code = data.get("code", "")
+    
+    if not name or not code:
+        return jsonify({"status": "error", "message": "Nombre y código son obligatorios."}), 400
+        
+    case = {
+        "name": name,
+        "description": description,
+        "code": code
+    }
+    
+    success = db_instance.save(case)
+    if success:
+        return jsonify({"status": "success", "message": "Caso de prueba guardado exitosamente."}), 200
+    else:
+        return jsonify({"status": "error", "message": "Error al guardar el caso de prueba."}), 500
 
 
 if __name__ == '__main__':

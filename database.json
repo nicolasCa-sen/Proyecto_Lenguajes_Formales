@@ -23,5 +23,15 @@
         "name": "5. Funciones Anidadas",
         "description": "Caso obligatorio: Una función que llama a otra función definida en el mismo programa",
         "code": "-- Funciones anidadas en MathLite\ndef duplicar(x) {\n  return x * 2\n}\n\ndef operar(y) {\n  let d = duplicar(y)\n  return d + 5\n}\n\nlet res = operar(10)\nprint(\"Resultado de operar(10) -> (10 * 2) + 5:\")\nprint(res)"
+    },
+    {
+        "name": "Ejemplo 1 de guardado ",
+        "description": "caso 123",
+        "code": "-- Expresión obligatoria\nlet resultado = (3 + 4 * 2) / (1 - 5)^2\nprint(resultado)"
+    },
+    {
+        "name": "ejemplo 2 de guardado",
+        "description": "caso 1234\n",
+        "code": "-- Expresión obligatoria\nlet resultado = (3 + 4 * 2) / (1 - 5)^2\nprint(resultado)"
     }
 ]

@@ -176,6 +176,44 @@
             width: 280px;
         }
 
+        .db-controls {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #f8fafc;
+        }
+
+        .db-search {
+            position: relative;
+        }
+
+        .db-search input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 6px 10px 6px 30px;
+            color: var(--text-main);
+            font-size: 0.8rem;
+            outline: none;
+            transition: var(--transition-quick);
+        }
+
+        .db-search input:focus {
+            border-color: var(--primary);
+        }
+
+        .db-search i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            font-size: 0.75rem;
+        }
+
         .case-list {
             flex-grow: 1;
             overflow-y: auto;
@@ -481,6 +519,90 @@
             stroke: #64748b;
         }
         
+        /* Modal para guardar casos */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.4);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition-quick);
+        }
+
+        .modal.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            width: 380px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .modal-close {
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition-quick);
+        }
+
+        .modal-close:hover {
+            color: var(--text-main);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-group label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group textarea {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px 10px;
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            font-size: 0.82rem;
+            outline: none;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: var(--primary);
+        }
+
         /* Floating notification */
         .toast {
             position: fixed;
@@ -531,15 +653,24 @@
     <!-- Workspace container -->
     <div class="workspace">
         
-        <!-- LEFT PANEL: Static Guide Test Cases -->
+        <!-- LEFT PANEL: NoSQL Database Test Cases -->
         <div class="panel" id="panel-database">
             <div class="panel-header">
                 <div class="panel-title">
-                    <i class="fa-solid fa-graduation-cap"></i> Ejemplos de la Guía
+                    <i class="fa-solid fa-database"></i> Casos de Prueba (NoSQL)
                 </div>
             </div>
+            <div class="db-controls">
+                <div class="db-search">
+                    <input type="text" id="search-input" placeholder="Filtrar casos..." oninput="filterCases()">
+                    <i class="fa-solid fa-filter"></i>
+                </div>
+                <button class="btn btn-outline" onclick="openSaveModal()">
+                    <i class="fa-solid fa-save"></i> Guardar en Base de Datos
+                </button>
+            </div>
             <div class="case-list" id="case-list-container">
-                <!-- Statically populated from JavaScript on load -->
+                <!-- Carga dinámica desde NoSQL -->
             </div>
         </div>
 
@@ -607,6 +738,28 @@
 
     </div>
 
+    <!-- Modal para guardar código -->
+    <div class="modal" id="save-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span>Guardar Caso en Base de Datos</span>
+                <i class="fa-solid fa-xmark modal-close" onclick="closeSaveModal()"></i>
+            </div>
+            <div class="form-group">
+                <label for="modal-case-name">Nombre del Caso de Prueba</label>
+                <input type="text" id="modal-case-name" placeholder="Ej: Factorial recursivo grande">
+            </div>
+            <div class="form-group">
+                <label for="modal-case-desc">Descripción</label>
+                <textarea id="modal-case-desc" rows="3" placeholder="Explique qué valida este código..."></textarea>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                <button class="btn btn-outline" onclick="closeSaveModal()">Cancelar</button>
+                <button class="btn" onclick="saveCaseToCloud()">Confirmar y Guardar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="toast" id="toast-notif">
         <i class="fa-solid fa-circle-info"></i>
         <span id="toast-text"></span>
@@ -615,34 +768,7 @@
     <script>
         const API_BASE = window.location.origin;
         
-        // Statically burned test cases from the project's formal guide
-        const loadedCases = [
-            {
-                "name": "1. Expresión Mixta",
-                "description": "Fórmula obligatoria con precedencia: (3 + 4 * 2) / (1 - 5)^2",
-                "code": "-- Expresión obligatoria con precedencia mixta\nlet resultado = (3 + 4 * 2) / (1 - 5)^2\nprint(resultado)"
-            },
-            {
-                "name": "2. Factorial Recursivo",
-                "description": "Función factorial recursiva con llamada y print de resultado",
-                "code": "-- Función factorial recursiva\ndef factorial(n) {\n  if n <= 1 {\n    return 1\n  }\n  return n * factorial(n - 1)\n}\n\nlet res = factorial(5)\nprint(\"El factorial de 5 es:\")\nprint(res)"
-            },
-            {
-                "name": "3. Acumulador con Ciclo While",
-                "description": "Bucle while estructurado que acumula la suma de 1 a n",
-                "code": "-- Suma acumulativa de 1 a n\nlet n = 10\nlet i = 1\nlet suma = 0\nwhile i <= n {\n  let suma = suma + i\n  let i = i + 1\n}\nprint(\"Suma acumulada de 1 a 10:\")\nprint(suma)"
-            },
-            {
-                "name": "4. Funciones Trigonométricas",
-                "description": "Llamadas a sin, cos y sqrt dentro de expresiones compuestas",
-                "code": "-- Pruebas de funciones matemáticas trigonométricas\nlet angulo = 0.785398 -- Aprox pi/4 (45 grados)\nlet s = sin(angulo)\nlet c = cos(angulo)\nlet raiz = sqrt(2.0)\n\nprint(\"Seno de pi/4:\")\nprint(s)\nprint(\"Coseno de pi/4:\")\nprint(c)\nprint(\"Raiz cuadrada de 2:\")\nprint(raiz)"
-            },
-            {
-                "name": "5. Funciones Anidadas",
-                "description": "Una función que llama a otra función definida en el mismo programa",
-                "code": "-- Funciones anidadas en MathLite\ndef duplicar(x) {\n  return x * 2\n}\n\ndef operar(y) {\n  let d = duplicar(y)\n  return d + 5\n}\n\nlet res = operar(10)\nprint(\"Resultado de operar(10) -> (10 * 2) + 5:\")\nprint(res)"
-            }
-        ];
+        let loadedCases = [];
         
         let currentActiveCase = null;
         let lastExecutionResults = null;
@@ -703,12 +829,99 @@
 
         window.onload = function() {
             syncScroll();
-            renderCases(loadedCases);
+            loadTestCases();
             resetASTView();
-            
-            // Cargar primer ejemplo por defecto
-            selectCase(0);
         };
+
+        async function loadTestCases() {
+            const listContainer = document.getElementById('case-list-container');
+            listContainer.innerHTML = `
+                <div style="color: var(--text-dim); text-align: center; margin-top: 40px;">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.2rem; margin-bottom: 8px;"></i>
+                    <p style="font-size: 0.75rem;">Conectando...</p>
+                </div>
+            `;
+            try {
+                const response = await fetch(`${API_BASE}/api/test_cases`);
+                if (!response.ok) throw new Error("Fallo");
+                
+                loadedCases = await response.json();
+                renderCases(loadedCases);
+                if (loadedCases.length > 0) {
+                    selectCase(0);
+                }
+            } catch (err) {
+                console.error("Error al cargar casos de la base de datos:", err);
+                // Fallback estático en caso de que falle la API
+                loadedCases = [
+                    {
+                        "name": "1. Expresión Mixta",
+                        "description": "Fórmula obligatoria con precedencia: (3 + 4 * 2) / (1 - 5)^2",
+                        "code": "-- Expresión obligatoria con precedencia mixta\nlet resultado = (3 + 4 * 2) / (1 - 5)^2\nprint(resultado)"
+                    },
+                    {
+                        "name": "2. Factorial Recursivo",
+                        "description": "Función factorial recursiva con llamada y print de resultado",
+                        "code": "-- Función factorial recursiva\ndef factorial(n) {\n  if n <= 1 {\n    return 1\n  }\n  return n * factorial(n - 1)\n}\n\nlet res = factorial(5)\nprint(\"El factorial de 5 es:\")\nprint(res)"
+                    },
+                    {
+                        "name": "3. Acumulador con Ciclo While",
+                        "description": "Bucle while estructurado que acumula la suma de 1 a n",
+                        "code": "-- Suma acumulativa de 1 a n\nlet n = 10\nlet i = 1\nlet suma = 0\nwhile i <= n {\n  let suma = suma + i\n  let i = i + 1\n}\nprint(\"Suma acumulada de 1 a 10:\")\nprint(suma)"
+                    },
+                    {
+                        "name": "4. Funciones Trigonométricas",
+                        "description": "Llamadas a sin, cos y sqrt dentro de expresiones compuestas",
+                        "code": "-- Pruebas de funciones matemáticas trigonométricas\nlet angulo = 0.785398 -- Aprox pi/4 (45 grados)\nlet s = sin(angulo)\nlet c = cos(angulo)\nlet raiz = sqrt(2.0)\n\nprint(\"Seno de pi/4:\")\nprint(s)\nprint(\"Coseno de pi/4:\")\nprint(c)\nprint(\"Raiz cuadrada de 2:\")\nprint(raiz)"
+                    },
+                    {
+                        "name": "5. Funciones Anidadas",
+                        "description": "Una función que llama a otra función definida en el mismo programa",
+                        "code": "-- Funciones anidadas en MathLite\ndef duplicar(x) {\n  return x * 2\n}\n\ndef operar(y) {\n  let d = duplicar(y)\n  return d + 5\n}\n\nlet res = operar(10)\nprint(\"Resultado de operar(10) -> (10 * 2) + 5:\")\nprint(res)"
+                    }
+                ];
+                renderCases(loadedCases);
+                selectCase(0);
+            }
+        }
+
+        function openSaveModal() {
+            document.getElementById('modal-case-name').value = currentActiveCase ? currentActiveCase.name : "";
+            document.getElementById('modal-case-desc').value = currentActiveCase ? currentActiveCase.description : "";
+            document.getElementById('save-modal').classList.add('open');
+        }
+        
+        function closeSaveModal() {
+            document.getElementById('save-modal').classList.remove('open');
+        }
+        
+        async function saveCaseToCloud() {
+            const name = document.getElementById('modal-case-name').value;
+            const description = document.getElementById('modal-case-desc').value;
+            const code = document.getElementById('code-editor').value;
+            
+            if (!name.trim()) {
+                showToast("Por favor, ingrese un nombre", true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/test_cases`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description, code })
+                });
+                
+                if (!response.ok) throw new Error("Error");
+                
+                closeSaveModal();
+                showToast("Caso de prueba guardado");
+                loadTestCases();
+            } catch (err) {
+                console.error(err);
+                showToast("Error al guardar en base de datos NoSQL", true);
+            }
+        }
 
         function updateLineCounter() {
             const editor = document.getElementById('code-editor');
