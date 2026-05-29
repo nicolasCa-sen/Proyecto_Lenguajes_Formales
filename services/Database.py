@@ -39,7 +39,7 @@ class Database:
         if self.mongo_uri and "<db_password>" not in self.mongo_uri:
             try:
                 from pymongo import MongoClient
-                self.client = MongoClient(self.mongo_uri)
+                self.client = MongoClient(self.mongo_uri, tlsAllowInvalidCertificates=True)
                 self.db = self.client["mathlite_db"]
                 self.collection = self.db["test_cases"]
                 

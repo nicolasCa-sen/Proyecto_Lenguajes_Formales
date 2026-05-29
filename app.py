@@ -46,7 +46,8 @@ def run_pipeline():
             "runtime_error": None,
             "stdout": [],
             "ast_tree_ui": None,
-            "result": None
+            "result": None,
+            "tokens": []
         }), 200
 
     # 1. Fase Léxica
@@ -62,10 +63,12 @@ def run_pipeline():
             "runtime_error": None,
             "stdout": [],
             "ast_tree_ui": None,
-            "result": None
+            "result": None,
+            "tokens": []
         }), 200
 
     lex_errors = lexer.errors
+    serialized_tokens = [t.to_dict() for t in tokens]
 
     # 2. Fase Sintáctica (Parser)
     parser = Parser(tokens)
@@ -80,7 +83,8 @@ def run_pipeline():
             "runtime_error": None,
             "stdout": [],
             "ast_tree_ui": None,
-            "result": None
+            "result": None,
+            "tokens": serialized_tokens
         }), 200
 
     syntax_errors = parser.errors
@@ -94,7 +98,8 @@ def run_pipeline():
             "runtime_error": None,
             "stdout": [],
             "ast_tree_ui": ast_to_dict(ast) if ast else None,
-            "result": None
+            "result": None,
+            "tokens": serialized_tokens
         }), 200
 
     # 3. Fase Semántica
@@ -110,7 +115,8 @@ def run_pipeline():
             "runtime_error": None,
             "stdout": [],
             "ast_tree_ui": ast_to_dict(ast),
-            "result": None
+            "result": None,
+            "tokens": serialized_tokens
         }), 200
 
     semantic_errors = semantic_analyzer.errors
@@ -124,7 +130,8 @@ def run_pipeline():
             "runtime_error": None,
             "stdout": [],
             "ast_tree_ui": ast_to_dict(ast),
-            "result": None
+            "result": None,
+            "tokens": serialized_tokens
         }), 200
 
     # 4. Fase de Ejecución (Intérprete)
@@ -148,7 +155,8 @@ def run_pipeline():
         "runtime_error": runtime_error,
         "stdout": interpreter.stdout,
         "ast_tree_ui": ast_to_dict(ast),
-        "result": str(result) if result is not None else None
+        "result": str(result) if result is not None else None,
+        "tokens": serialized_tokens
     }), 200
 
 
