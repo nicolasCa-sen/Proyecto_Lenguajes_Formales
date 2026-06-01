@@ -86,6 +86,12 @@ class Parser:
     def statement(self):
         if self.match('LET'):
             return self.var_declaration()
+        elif self.check('ID') and self.pos + 1 < len(self.tokens) and self.tokens[self.pos + 1].type == 'ASSIGN':
+            var_token = self.advance()
+            assign_token = self.advance()
+            expr = self.expression()
+            var_node = VariableNode(var_token.value, var_token.line, var_token.column)
+            return AssignNode(var_node, expr, var_token.line, var_token.column)
         elif self.match('DEF'):
             return self.func_declaration()
         elif self.match('WHILE'):
