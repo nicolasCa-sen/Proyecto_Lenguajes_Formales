@@ -199,7 +199,7 @@ def run_parser():
     data = request.json or {}
     code = data.get("code", "")
     
-    logs = ["Iniciando Fase 2 y 3: Análisis Sintáctico..."]
+    logs = [" Análisis Sintáctico"]
     try:
         lexer = Lexer(code)
         tokens = lexer.tokenize()
@@ -228,7 +228,7 @@ def run_semantic():
     data = request.json or {}
     code = data.get("code", "")
     
-    logs = [">>> Iniciando Fase 4: Análisis Semántico..."]
+    logs = ["Análisis Semántico"]
     try:
         lexer = Lexer(code)
         tokens = lexer.tokenize()
@@ -264,7 +264,7 @@ def run_interpreter():
     data = request.json or {}
     code = data.get("code", "")
     
-    logs = [">>> Iniciando Fase 5: Entorno de Ejecución (REPL)..."]
+    logs = [" Entorno de Ejecución (REPL)"]
     try:
         lexer = Lexer(code)
         tokens = lexer.tokenize()
