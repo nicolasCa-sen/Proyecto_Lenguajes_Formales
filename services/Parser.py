@@ -175,11 +175,7 @@ class Parser:
             err = f"Error Sintáctico [L:{self.peek().line}, C:{self.peek().column}]: Se esperaba una condición para la sentencia 'if'."
             self.errors.append(err)
             
-            # Opción A: Lanzar el error inmediatamente para frenar el análisis
             raise SyntaxError(err)
-            
-            # Opción B: Crear un nodo de error simulado para que el AST no colapse
-            # cond = None 
         else:
             cond = self.expression()
         self.consume('LBRACE', "Se esperaba '{' para iniciar el bloque if.")
